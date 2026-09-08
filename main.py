@@ -4,7 +4,8 @@ from fastapi import FastAPI
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
 
-sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
+# Configuración estricta para que acepte conexiones de la nube de Render
+sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 socket_app = socketio.ASGIApp(sio, app)
