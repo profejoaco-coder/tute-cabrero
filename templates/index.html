@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Tute Cabrero</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
+</head>
+<body>
+    <h1>Tute Cabrero</h1>
+    <div id="setup">
+        <input type="text" id="nombre" placeholder="Tu nombre">
+        <input type="text" id="sala" placeholder="Código de sala">
+        <button onclick="unirse()">Unirse</button>
+    </div>
+
+    <div id="game" style="display:none;">
+        <h2>Sala: <span id="nombre-sala"></span></h2>
+        <h3>Jugadores:</h3>
+        <ul id="lista-jugadores"></ul>
+        <button onclick="comenzar()">Repartir Cartas</button>
+        
+        <h3>Tus Cartas:</h3>
+        <div id="mis-cartas" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
+        <h3 id="info-triunfo"></h3>
+    </div>
+
+    <script>
+        const socket = io();
+        let miSala = "";
+
+        function unirse() {
+            const name = document.getElementById("nombre").value;
+            miSala = document.getElementById("sala").value;
+            if(!name || !miSala) return;
+
+            socket.emit("join_room", { room: miSala, name: name });
+            document.getElementById("setup").style.display = "none";
+            document.getElementById("game").style.display = "block";
+            document.getElementById("nombre-sala").innerText = miSala;
+        }
+
+        function comenzar() {
+            socket.emit("start_game", { room: miSala });
+        }
+
+        socket.on("update_lobby", (data) => {
+            const lista = document.getElementById("lista-jugadores");
+            lista.innerHTML = "";
+            data.players.forEach(p => {
+                let li = document.createElement("li");
+                li.innerText = p;
+                lista.appendChild(li);
+            });
+        });
+
+        socket.on("game_started", (data) => {
+            const contenedor = document.getElementById("mis-cartas");
+            contenedor.innerHTML = "";
+            data.hand.forEach(carta => {
+                let div = document.createElement("div");
+                div.style.border = "1px solid black";
+                div.style.padding = "5px";
+                div.innerText = `${carta.numero} de ${carta.palo}`;
+                contenedor.appendChild(div);
+            });
+        });
+
+        socket.on("info_partida", (data) => {
+            document.getElementById("info-triunfo").innerText = `Triunfo: ${data.triunfo.numero} de ${data.triunfo.palo}`;
+        });
+    </script>
+</body>
+</html>
