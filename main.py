@@ -27,11 +27,19 @@ async def index(request: Request):
 async def join_room(sid, data):
     room = data.get("room")
     name = data.get("name", "Jugador")
+    
     sio.enter_room(sid, room)
+    
     if room not in rooms:
         rooms[room] = {"players": [], "deck": [], "hands": {}}
-    rooms[room]["players"].append({"sid": sid, "name": name})
-    await sio.emit("update_lobby", {"players": [p["name"] for p in rooms[room]["players"]]}, room=room)
+    
+    # Evitar duplicar si el mismo sid se reconecta
+    if not any(p["sid"] == sid for p in rooms[room]["players"]):
+        rooms[room]["players"].append({"sid": sid, "name": name})
+    
+    # Enviar la lista actualizada a todos en la sala
+    nombres = [p["name"] for p in rooms[room]["players"]]
+    await sio.emit("update_lobby", {"players": nombres}, room=room)
 
 @sio.event
 async def start_game(sid, data):
