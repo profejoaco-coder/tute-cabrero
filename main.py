@@ -58,4 +58,4 @@ async def disconnect(sid):
         data["players"] = [p for p in data["players"] if p["sid"] != sid]
         await sio.emit("update_lobby", {"players": [p["name"] for p in data["players"]]}, room=room)
 
-app.mount("/", socket_app)
+app = socket_app
