@@ -20,7 +20,7 @@ def crear_mazo():
 
 @app.get("/")
 async def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="index.html")
 
 @sio.event
 async def join_room(sid, data):
