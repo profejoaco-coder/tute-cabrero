@@ -44,13 +44,10 @@
         }
 
         socket.on("update_lobby", (data) => {
-            const lista = document.getElementById("lista-jugadores");
-            lista.innerHTML = "";
-            data.players.forEach(p => {
-                let li = document.createElement("li");
-                li.innerText = p;
-                lista.appendChild(li);
-            });
+    const lista = document.getElementById("lista-jugadores");
+    // data.players es una lista de strings con los nombres (ej: ["Juan", "Pedro", "Ana"])
+    lista.innerText = data.players.join(" - ");
+});
         });
 
         socket.on("game_started", (data) => {
