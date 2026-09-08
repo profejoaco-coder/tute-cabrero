@@ -33,19 +33,18 @@ async def join_room(sid, data):
     
     print(f"=== {name} (SID: {sid}) quiere unirse a la sala: {room} ===")
     
-    sio.enter_room(sid, room)
+    # IMPORTANTE: Aquí agregamos el 'await' que faltaba
+    await sio.enter_room(sid, room)
     
     if room not in rooms:
         rooms[room] = {"players": [], "deck": [], "hands": {}}
     
-    # Agregar si no está
     if not any(p["sid"] == sid for p in rooms[room]["players"]):
         rooms[room]["players"].append({"sid": sid, "name": name})
     
     nombres = [p["name"] for p in rooms[room]["players"]]
     print(f"Jugadores actuales en sala {room}: {nombres}")
     
-    # Emitir a todos en la sala
     await sio.emit("update_lobby", {"players": nombres}, room=room)
 
 @sio.event
