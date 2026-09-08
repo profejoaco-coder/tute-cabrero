@@ -28,43 +28,68 @@
         const socket = io();
         let miSala = "";
 
+        const diseñoPalos = {
+            oros: { icono: "🪙", clase: "oros" },
+            copas: { icono: "🍷", clase: "copas" },
+            espadas: { icono: "⚔️", clase: "espadas" },
+            bastos: { icono: "🪵", clase: "bastos" }
+        };
+
         function unirse() {
             const name = document.getElementById("nombre").value;
             miSala = document.getElementById("sala").value;
             if(!name || !miSala) return;
 
+            console.log("Intentando unirse a la sala:", miSala, "como:", name);
             socket.emit("join_room", { room: miSala, name: name });
             document.getElementById("setup").style.display = "none";
             document.getElementById("game").style.display = "block";
-            document.getElementById("nombre-sala").innerText = miSala;
+            document.getElementById("nombre-sala").innerText = miSala.toUpperCase();
         }
 
         function comenzar() {
             socket.emit("start_game", { room: miSala });
         }
 
+        // Evento que recibe la lista de jugadores
         socket.on("update_lobby", (data) => {
-    const lista = document.getElementById("lista-jugadores");
-    // data.players es una lista de strings con los nombres (ej: ["Juan", "Pedro", "Ana"])
-    lista.innerText = data.players.join(" - ");
-});
+            console.log("¡Evento update_lobby recibido!", data);
+            const elemento = document.getElementById("lista-jugadores");
+            if (elemento && data.players) {
+                elemento.innerText = data.players.join(" - ");
+            }
         });
+
+        function crearCartaHTML(numero, palo) {
+            const diseño = diseñoPalos[palo];
+            let div = document.createElement("div");
+            div.className = `carta ${diseño.clase}`;
+            
+            let textoNum = numero;
+            if(numero === 10) textoNum = "Sota";
+            if(numero === 11) textoNum = "Cab";
+            if(numero === 12) textoNum = "Rey";
+
+            div.innerHTML = `
+                <div style="text-align: left;">${textoNum}</div>
+                <div class="centro">${diseño.icono}</div>
+                <div style="text-align: right; transform: rotate(180deg);">${textoNum}</div>
+            `;
+            return div;
+        }
 
         socket.on("game_started", (data) => {
             const contenedor = document.getElementById("mis-cartas");
             contenedor.innerHTML = "";
             data.hand.forEach(carta => {
-                let div = document.createElement("div");
-                div.style.border = "1px solid black";
-                div.style.padding = "5px";
-                div.innerText = `${carta.numero} de ${carta.palo}`;
-                contenedor.appendChild(div);
+                let divCarta = crearCartaHTML(carta.numero, carta.palo);
+                contenedor.appendChild(divCarta);
             });
         });
 
         socket.on("info_partida", (data) => {
-            document.getElementById("info-triunfo").innerText = `Triunfo: ${data.triunfo.numero} de ${data.triunfo.palo}`;
+            const diseño = diseñoPalos[data.triunfo.palo];
+            document.getElementById("info-triunfo").innerHTML = 
+                `TRIUNFO: ${data.triunfo.numero} de ${diseño.icono}`;
         });
     </script>
-</body>
-</html>
