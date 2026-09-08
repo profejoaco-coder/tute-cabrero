@@ -4,7 +4,6 @@ from fastapi import FastAPI
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
 
-# Configuración estricta para que acepte conexiones de la nube de Render
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -24,21 +23,29 @@ async def index(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
 
 @sio.event
+async def connect(sid, environ):
+    print(f"--> Nuevo cliente conectado: {sid}")
+
+@sio.event
 async def join_room(sid, data):
     room = data.get("room")
     name = data.get("name", "Jugador")
+    
+    print(f"=== {name} (SID: {sid}) quiere unirse a la sala: {room} ===")
     
     sio.enter_room(sid, room)
     
     if room not in rooms:
         rooms[room] = {"players": [], "deck": [], "hands": {}}
     
-    # Evitar duplicar si el mismo sid se reconecta
+    # Agregar si no está
     if not any(p["sid"] == sid for p in rooms[room]["players"]):
         rooms[room]["players"].append({"sid": sid, "name": name})
     
-    # Enviar la lista actualizada a todos en la sala
     nombres = [p["name"] for p in rooms[room]["players"]]
+    print(f"Jugadores actuales en sala {room}: {nombres}")
+    
+    # Emitir a todos en la sala
     await sio.emit("update_lobby", {"players": nombres}, room=room)
 
 @sio.event
@@ -48,6 +55,7 @@ async def start_game(sid, data):
     if not game_data:
         return
     num_players = len(game_data["players"])
+    print(f"Iniciando partida en sala {room} con {num_players} jugadores.")
     
     cartas_por_jugador = 13 if num_players == 3 else (10 if num_players == 4 else 8)
     deck = crear_mazo()
@@ -63,8 +71,10 @@ async def start_game(sid, data):
 
 @sio.event
 async def disconnect(sid):
+    print(f"<-- Cliente desconectado: {sid}")
     for room, data in rooms.items():
         data["players"] = [p for p in data["players"] if p["sid"] != sid]
-        await sio.emit("update_lobby", {"players": [p["name"] for p in data["players"]]}, room=room)
+        nombres = [p["name"] for p in data["players"]]
+        await sio.emit("update_lobby", {"players": nombres}, room=room)
 
 app = socket_app
